@@ -1,0 +1,24 @@
+# Normalize text files and avoid cross-platform line-ending conflicts.
+* text=auto eol=lf
+
+# Keep Visual Studio and Windows-native scripts on CRLF.
+*.sln text eol=crlf
+*.csproj text eol=crlf
+*.props text eol=crlf
+*.targets text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Common binary files.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.dll binary
+*.exe binary
+*.zip binary
+*.nupkg binary
+*.bhm binary
+

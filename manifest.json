@@ -1,0 +1,16 @@
+{
+  "name": "Tyria's GPS",
+  "version": "1.0.0",
+  "namespace": "tyriasgps",
+  "package": "TyriasGPS.dll",
+  "manifest_version": 1,
+  "contributors": [
+    {
+      "name": "ItzFeral"
+    }
+  ],
+  "description": "Search locations and generate a chat link for whispering to yourself.",
+  "dependencies": {
+    "bh.blishhud": "0.7.1"
+  }
+}

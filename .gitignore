@@ -1,0 +1,36 @@
+# Build outputs
+bin/
+obj/
+
+# BlishHUD module output
+*.bhm
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# VS Code
+.vscode/
+
+# Test results
+TestResults/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# Publish output
+publish/
+
+# OS metadata
+Thumbs.db
+.DS_Store
+
+# Local project files and logs
+local/
+
