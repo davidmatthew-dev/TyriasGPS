@@ -10,6 +10,8 @@ using Blish_HUD.Input;
 using Blish_HUD.Modules;
 using Blish_HUD.Modules.Managers;
 using Blish_HUD.Settings;
+using Gw2Sharp;
+using Gw2Sharp.WebApi.V2.Models;
 using Microsoft.Xna.Framework;
 
 namespace TyriasGPS
@@ -17,13 +19,13 @@ namespace TyriasGPS
     [Export(typeof(Module))]
     public class TyriasGPSModule : Module
     {
+        private readonly Gw2Client _publicGw2Client = new Gw2Client();
         private SettingEntry<string> _locationSearch;
         private CornerIcon _cornerIcon;
         private StandardWindow _window;
         private TextBox _searchTextBox;
         private StandardButton _searchButton;
         private Label _resultLabel;
-        private List<string> _mapNames = new List<string>();
 
         [ImportingConstructor]
         public TyriasGPSModule([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters)
@@ -55,7 +57,7 @@ namespace TyriasGPS
 
             var windowTexture = ModuleParameters.ContentsManager.GetTexture("window-background.png");
 
-            _window = new StandardWindow(windowTexture, new Rectangle(40, 26, 280, 200), new Rectangle(50, 36, 260, 170))
+            _window = new StandardWindow(windowTexture, new Microsoft.Xna.Framework.Rectangle(40, 26, 280, 200), new Microsoft.Xna.Framework.Rectangle(50, 36, 260, 170))
             {
                 Parent = GameService.Graphics.SpriteScreen,
                 Title = "Tyria's GPS",
@@ -97,7 +99,12 @@ namespace TyriasGPS
             _window?.ToggleWindow();
         }
 
-        private void OnSearchButtonClick(object sender, MouseEventArgs e)
+        private async void OnSearchButtonClick(object sender, MouseEventArgs e)
+        {
+            await RunSearchAsync();
+        }
+
+        private async Task RunSearchAsync()
         {
             string query = _searchTextBox.Text.Trim();
 
@@ -106,15 +113,57 @@ namespace TyriasGPS
 
             LogHelper.Log("Searching for location: " + query);
 
-            var results = _mapNames.Where(m => m.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
-
-            if (results.Count == 0)
+            try
             {
-                _resultLabel.Text = "No maps found matching the query.";
-                return;
-            }
+                var allMaps = await _publicGw2Client.WebApi.V2.Maps.AllAsync();
+                var maps = allMaps.ToList();
+                LogHelper.Log($"Fetched {maps.Count} maps from the public API.");
 
-            _resultLabel.Text = results.First();
+                var selectedMap = maps
+                    .Where(m => !string.IsNullOrWhiteSpace(m.Name)
+                                && m.Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .OrderBy(m => m.Name.Equals(query, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                    .ThenBy(m => m.Name)
+                    .FirstOrDefault();
+
+                if (selectedMap == null)
+                {
+                    _resultLabel.Text = "No maps found matching the query.";
+                    LogHelper.Log("No maps matched query: " + query);
+                    return;
+                }
+
+                LogHelper.Log($"Using map '{selectedMap.Name}' (Id={selectedMap.Id}, Region={selectedMap.RegionId}, Floor={selectedMap.DefaultFloor}).");
+
+                var floor = await _publicGw2Client.WebApi.V2.Continents[selectedMap.ContinentId].Floors[selectedMap.DefaultFloor].GetAsync();
+                var map = floor.Regions.Values
+                    .SelectMany(region => region.Maps.Values)
+                    .FirstOrDefault(m => m.Id == selectedMap.Id);
+
+                var waypoints = (map?.PointsOfInterest?.Values ?? Enumerable.Empty<ContinentFloorRegionMapPoi>())
+                    .Where(poi => poi.Type.ToString().Equals("Waypoint", StringComparison.OrdinalIgnoreCase)
+                                  && !string.IsNullOrWhiteSpace(poi.Name)
+                                  && !string.IsNullOrWhiteSpace(poi.ChatLink))
+                    .ToList();
+
+                LogHelper.Log($"Fetched {waypoints.Count} POIs for map '{selectedMap.Name}'.");
+
+                if (waypoints.Count == 0)
+                {
+                    _resultLabel.Text = $"No waypoints found on map '{selectedMap.Name}'.";
+                    LogHelper.Log($"Search completed for query: {query}, found 0 waypoints on map {selectedMap.Name}");
+                    return;
+                }
+
+                var topWaypoint = waypoints.First();
+                _resultLabel.Text = $"{selectedMap.Name}: {topWaypoint.Name} {topWaypoint.ChatLink}";
+                LogHelper.Log($"Search completed for query: {query}, found {waypoints.Count} waypoints on map {selectedMap.Name}");
+            }
+            catch (Exception ex)
+            {
+                _resultLabel.Text = "Search failed. Check logs for details.";
+                LogHelper.LogException(ex, "Search request failed");
+            }
         }
 
         protected override void Unload()

@@ -1,13 +1,12 @@
 # Tyria's GPS
 
-Tyria's GPS adds a searchable window and corner icon.
+Tyria's GPS can search map data from the public API.
 
 ## Current Features
 
 - Corner icon is available.
-- Search box and Search button are in the module window.
-- Shows the first matching result in the window.
-- Search data is not connected yet.
+- Searches map data from the public API.
+- Matching result text is shown in the module window.
 
 ## Installation
 
@@ -19,6 +18,11 @@ Tyria's GPS adds a searchable window and corner icon.
 6. Back in BlishHUD, refresh modules (or restart BlishHUD).
 
 ## Version History
+
+**v1.1.0**
+- Load map data from the public API when a search runs.
+- Use map results for location matching.
+- Updated to version 1.1.0.
 
 **v1.0.2**
 - Added the module window with search input and search button.
