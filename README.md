@@ -6,7 +6,9 @@ Tyria's GPS can search map data from the public API.
 
 - Corner icon is available.
 - Searches map data from the public API.
-- Matching result text is shown in the module window.
+- Builds a POI index from API data on first search.
+- Orders results by closer name matches.
+- Shows the best matching result in the module window.
 
 ## Installation
 
@@ -18,6 +20,12 @@ Tyria's GPS can search map data from the public API.
 6. Back in BlishHUD, refresh modules (or restart BlishHUD).
 
 ## Version History
+
+**v1.1.1**
+- Reworked search to build a POI index from API data on first search.
+- Orders results by closer name matches.
+- Returns up to 25 results per search.
+- Updated to version 1.1.1.
 
 **v1.1.0**
 - Load map data from the public API when a search runs.

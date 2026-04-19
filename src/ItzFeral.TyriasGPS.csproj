@@ -5,7 +5,7 @@
     <AssemblyName>TyriasGPS</AssemblyName>
     <RootNamespace>TyriasGPS</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <ModuleVersion>1.1.0</ModuleVersion>
+    <ModuleVersion>1.1.1</ModuleVersion>
     <BlishHUDModuleFileName>ItzFeral.$(AssemblyName)_$(ModuleVersion)</BlishHUDModuleFileName>
   </PropertyGroup>
   <ItemGroup>
