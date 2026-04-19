@@ -1,6 +1,6 @@
 {
   "name": "Tyria's GPS",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "namespace": "tyriasgps",
   "package": "TyriasGPS.dll",
   "manifest_version": 1,

@@ -1,14 +1,13 @@
 # Tyria's GPS
 
-Tyria's GPS is the starting structure for this module.
+Tyria's GPS adds a searchable window and corner icon.
 
-## Current Stage
+## Current Features
 
-- Core project files are in place.
-- Fixed module enable behavior.
-- Updated BlishHUD dependency version.
-- Corner icon was removed for now.
-- Search window and logging are still in place but search has no data connected.
+- Corner icon is available.
+- Search box and Search button are in the module window.
+- Shows the first matching result in the window.
+- Search data is not connected yet.
 
 ## Installation
 
@@ -20,6 +19,12 @@ Tyria's GPS is the starting structure for this module.
 6. Back in BlishHUD, refresh modules (or restart BlishHUD).
 
 ## Version History
+
+**v1.0.2**
+- Added the module window with search input and search button.
+- Added corner icon.
+- Show the first matching result in the window.
+- Updated to version 1.0.2.
 
 **v1.0.1**
 - Fixed module enable behavior.
