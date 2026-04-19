@@ -42,7 +42,10 @@ namespace TyriasGPS
         private StandardWindow _window;
         private TextBox _searchTextBox;
         private StandardButton _searchButton;
-        private Label _resultLabel;
+        private Label _statusLabel;
+        private FlowPanel _resultsFlowPanel;
+        private AsyncTexture2D _windowBackgroundTexture;
+        private AsyncTexture2D _moduleIconTexture;
 
         private Task _poiIndexLoadTask;
 
@@ -68,19 +71,24 @@ namespace TyriasGPS
         {
             LogHelper.Log("Module loaded.");
 
-            var cornerIconTexture = ModuleParameters.ContentsManager.GetTexture("corner-icon.png");
+            _windowBackgroundTexture = AsyncTexture2D.FromAssetId(155997);
+            _moduleIconTexture = AsyncTexture2D.FromAssetId(440023);
+
+            return Task.CompletedTask;
+        }
+
+        private void CreateUi()
+        {
             _cornerIcon = new CornerIcon
             {
-                Icon = cornerIconTexture,
+                Icon = _moduleIconTexture,
                 BasicTooltipText = Name,
                 Parent = GameService.Graphics.SpriteScreen,
                 Priority = 1743521
             };
             _cornerIcon.Click += OnCornerIconClick;
 
-            var windowTexture = ModuleParameters.ContentsManager.GetTexture("window-background.png");
-
-            _window = new StandardWindow(windowTexture, new Microsoft.Xna.Framework.Rectangle(40, 26, 280, 200), new Microsoft.Xna.Framework.Rectangle(50, 36, 260, 170))
+            _window = new StandardWindow(_windowBackgroundTexture, new Microsoft.Xna.Framework.Rectangle(40, 26, 420, 360), new Microsoft.Xna.Framework.Rectangle(50, 36, 400, 330))
             {
                 Parent = GameService.Graphics.SpriteScreen,
                 Title = "Tyria's GPS",
@@ -91,7 +99,7 @@ namespace TyriasGPS
             {
                 Parent = _window,
                 Location = new Point(10, 20),
-                Size = new Point(180, 28),
+                Size = new Point(300, 28),
                 PlaceholderText = "Search map/location"
             };
 
@@ -99,22 +107,29 @@ namespace TyriasGPS
             {
                 Parent = _window,
                 Text = "Search",
-                Location = new Point(200, 20),
-                Size = new Point(60, 28)
+                Location = new Point(320, 20),
+                Size = new Point(80, 28)
             };
             _searchButton.Click += OnSearchButtonClick;
 
-            _resultLabel = new Label
+            _statusLabel = new Label
             {
                 Parent = _window,
                 Location = new Point(10, 60),
-                Size = new Point(240, 80),
-                WrapText = true
+                Size = new Point(390, 38),
+                WrapText = true,
+                Text = "Search for a location to show matching results."
             };
 
-            _window.Show();
+            RebuildResultsPanel();
 
-            return Task.CompletedTask;
+            _window.Show();
+        }
+
+        protected override void OnModuleLoaded(EventArgs e)
+        {
+            base.OnModuleLoaded(e);
+            CreateUi();
         }
 
         private void OnCornerIconClick(object sender, MouseEventArgs e)
@@ -132,9 +147,13 @@ namespace TyriasGPS
             string query = _searchTextBox.Text.Trim();
 
             if (string.IsNullOrEmpty(query))
+            {
+                _statusLabel.Text = "Enter a search term before searching.";
                 return;
+            }
 
             LogHelper.Log("Searching for location: " + query);
+            _statusLabel.Text = $"Searching for: {query}";
 
             try
             {
@@ -143,19 +162,57 @@ namespace TyriasGPS
 
                 if (results.Count == 0)
                 {
-                    _resultLabel.Text = "No POIs matched the query.";
+                    _statusLabel.Text = "No POIs matched the query.";
+                    RebuildResultsPanel();
                     LogHelper.Log("No POIs matched query: " + query);
                     return;
                 }
 
-                var topResult = results.First();
-                _resultLabel.Text = $"{topResult.MapName}: {topResult.Name} {topResult.ChatLink}";
+                _statusLabel.Text = $"Found {results.Count} results, sorting...";
+                RenderSearchResults(results);
+                _statusLabel.Text = $"Found {results.Count} POI matches.";
                 LogHelper.Log($"Search completed for query: {query}, found {results.Count} POI matches.");
             }
             catch (Exception ex)
             {
-                _resultLabel.Text = "Search failed. Check logs for details.";
+                _statusLabel.Text = "Search failed. Check logs for details.";
+                RebuildResultsPanel();
                 LogHelper.LogException(ex, "Search request failed");
+            }
+        }
+
+        private void RebuildResultsPanel()
+        {
+            _resultsFlowPanel?.Dispose();
+            _resultsFlowPanel = new FlowPanel
+            {
+                Parent = _window,
+                Location = new Point(10, 105),
+                Size = new Point(390, 220),
+                Title = "Matches",
+                ShowBorder = true,
+                CanScroll = true,
+                FlowDirection = ControlFlowDirection.SingleTopToBottom,
+                ControlPadding = new Vector2(0f, 4f),
+                OuterControlPadding = new Vector2(8f, 8f)
+            };
+        }
+
+        private void RenderSearchResults(IReadOnlyCollection<PoiSearchResult> results)
+        {
+            RebuildResultsPanel();
+
+            foreach (var result in results)
+            {
+                var line = new Label
+                {
+                    Parent = _resultsFlowPanel,
+                    AutoSizeWidth = false,
+                    Width = 360,
+                    Height = 34,
+                    WrapText = true,
+                    Text = $"{result.Name} [{result.Type}] - {result.MapName}"
+                };
             }
         }
 
@@ -189,6 +246,12 @@ namespace TyriasGPS
 
             foreach (var floorTarget in floorTargets)
             {
+                if (floorTarget.FloorId <= 0)
+                {
+                    LogHelper.Log($"Skipping unsupported floor id {floorTarget.FloorId} on continent {floorTarget.ContinentId}.");
+                    continue;
+                }
+
                 try
                 {
                     var floor = await _publicGw2Client.WebApi.V2.Continents[floorTarget.ContinentId].Floors[floorTarget.FloorId].GetAsync();
@@ -334,7 +397,10 @@ namespace TyriasGPS
                 _cornerIcon = null;
             }
 
+            _resultsFlowPanel?.Dispose();
             _window?.Dispose();
+            _windowBackgroundTexture = null;
+            _moduleIconTexture = null;
         }
     }
 }
