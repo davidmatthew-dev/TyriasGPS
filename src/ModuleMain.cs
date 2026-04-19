@@ -1,6 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 using Blish_HUD;
 using Blish_HUD.Content;
@@ -13,23 +12,21 @@ using Microsoft.Xna.Framework;
 
 namespace TyriasGPS
 {
+    [Export(typeof(Module))]
     public class TyriasGPSModule : Module
     {
-        private SettingEntry<string> _locationSearch;
-        private CornerIcon _cornerIcon;
         private StandardWindow _window;
         private TextBox _searchTextBox;
         private StandardButton _searchButton;
         private Label _resultLabel;
-        private List<string> _mapNames = new List<string>();
 
-        public TyriasGPSModule(ModuleParameters moduleParameters) : base(moduleParameters)
+        [ImportingConstructor]
+        public TyriasGPSModule([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters)
         {
         }
 
         protected override void DefineSettings(SettingCollection settings)
         {
-            _locationSearch = settings.DefineSetting("locationSearch", string.Empty, () => "Location Search", () => "Search term for POI search.");
         }
 
         protected override void Initialize()
@@ -39,16 +36,6 @@ namespace TyriasGPS
         protected override Task LoadAsync()
         {
             LogHelper.Log("Module loaded.");
-
-            var cornerIconTexture = ModuleParameters.ContentsManager.GetTexture("corner-icon.png");
-            _cornerIcon = new CornerIcon
-            {
-                Icon = cornerIconTexture,
-                BasicTooltipText = Name,
-                Parent = GameService.Graphics.SpriteScreen,
-                Priority = 1743521
-            };
-            _cornerIcon.Click += OnCornerIconClick;
 
             var windowTexture = ModuleParameters.ContentsManager.GetTexture("window-background.png");
 
@@ -89,11 +76,6 @@ namespace TyriasGPS
             return Task.CompletedTask;
         }
 
-        private void OnCornerIconClick(object sender, MouseEventArgs e)
-        {
-            _window?.ToggleWindow();
-        }
-
         private void OnSearchButtonClick(object sender, MouseEventArgs e)
         {
             string query = _searchTextBox.Text.Trim();
@@ -101,31 +83,12 @@ namespace TyriasGPS
             if (string.IsNullOrEmpty(query))
                 return;
 
-            var results = _mapNames.Where(m => m.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
-
-            if (results.Count == 0)
-            {
-                _resultLabel.Text = "No maps found matching the query.";
-                return;
-            }
-
-            _resultLabel.Text = results.First();
+            _resultLabel.Text = "No maps found matching the query.";
         }
 
         protected override void Unload()
         {
-            if (_searchButton != null)
-            {
-                _searchButton.Click -= OnSearchButtonClick;
-            }
-
-            if (_cornerIcon != null)
-            {
-                _cornerIcon.Click -= OnCornerIconClick;
-                _cornerIcon.Dispose();
-                _cornerIcon = null;
-            }
-
+            _searchButton.Click -= OnSearchButtonClick;
             _window?.Dispose();
         }
     }

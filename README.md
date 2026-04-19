@@ -5,9 +5,10 @@ Tyria's GPS is the starting structure for this module.
 ## Current Stage
 
 - Core project files are in place.
-- Default corner icon is available.
-- Search window with a search box is included but not usable in the present state.
-- Logging support is included for development testing.
+- Fixed module enable behavior.
+- Updated BlishHUD dependency version.
+- Corner icon was removed for now.
+- Search window and logging are still in place but search has no data connected.
 
 ## Installation
 
@@ -19,6 +20,11 @@ Tyria's GPS is the starting structure for this module.
 6. Back in BlishHUD, refresh modules (or restart BlishHUD).
 
 ## Version History
+
+**v1.0.1**
+- Fixed module enable behavior.
+- Updated BlishHUD dependency version requirements.
+- Updated to version 1.0.1.
 
 **v1.0.0**
 - Added initial solution, project, and module manifest files.

@@ -1,6 +1,6 @@
 {
   "name": "Tyria's GPS",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "namespace": "tyriasgps",
   "package": "TyriasGPS.dll",
   "manifest_version": 1,
@@ -11,6 +11,6 @@
   ],
   "description": "Search locations and generate a chat link for whispering to yourself.",
   "dependencies": {
-    "bh.blishhud": "0.7.1"
+    "bh.blishhud": ">=1.2.0"
   }
 }
