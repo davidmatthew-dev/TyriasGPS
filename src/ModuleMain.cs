@@ -89,7 +89,7 @@ namespace TyriasGPS
             };
             _cornerIcon.Click += OnCornerIconClick;
 
-            _window = new StandardWindow(_windowBackgroundTexture, new Microsoft.Xna.Framework.Rectangle(40, 26, 500, 360), new Microsoft.Xna.Framework.Rectangle(50, 50, 480, 316))
+            _window = new StandardWindow(_windowBackgroundTexture, new Microsoft.Xna.Framework.Rectangle(40, 26, 500, 550), new Microsoft.Xna.Framework.Rectangle(50, 50, 480, 506))
             {
                 Parent = GameService.Graphics.SpriteScreen,
                 Title = "Tyria's GPS",
@@ -117,7 +117,7 @@ namespace TyriasGPS
             {
                 Parent = _window,
                 Location = new Point(10, 60),
-                Size = new Point(390, 38),
+                Size = new Point(470, 34),
                 WrapText = true,
                 Text = "Search for a location to show matching results."
             };
@@ -189,9 +189,9 @@ namespace TyriasGPS
             _resultsFlowPanel = new FlowPanel
             {
                 Parent = _window,
-                Location = new Point(10, 105),
-                Size = new Point(390, 220),
-                Title = "Matches",
+                Location = new Point(10, 100),
+                Size = new Point(470, 385),
+                Title = "Results",
                 ShowBorder = true,
                 CanScroll = true,
                 FlowDirection = ControlFlowDirection.SingleTopToBottom,
@@ -209,10 +209,10 @@ namespace TyriasGPS
                 var button = new StandardButton
                 {
                     Parent = _resultsFlowPanel,
-                    Width = 360,
+                    Width = 440,
                     Height = 34,
                     Text = $"{result.Name} [{result.Type}] - {result.MapName}",
-                    BasicTooltipText = $"Click to copy the chat link for {result.Name}. Use /w <name> first, then paste it.",
+                    BasicTooltipText = $"Click to copy whisper text for {result.Name}.",
                     Icon = _moduleIconTexture,
                     ResizeIcon = true
                 };
@@ -232,11 +232,24 @@ namespace TyriasGPS
 
         private async Task CopyResultLinkAsync(PoiSearchResult result)
         {
-            string clipboardText = result.ChatLink;
+            string currentCharacterName = GameService.Gw2Mumble.PlayerCharacter?.Name?.Trim() ?? string.Empty;
+            string clipboardText = BuildWhisperClipboardText(currentCharacterName, result.ChatLink);
             await ClipboardUtil.WindowsClipboardService.SetTextAsync(clipboardText);
 
-            _statusLabel.Text = $"Copied the chat link for {result.Name}.";
+            _statusLabel.Text = string.IsNullOrWhiteSpace(currentCharacterName)
+                ? $"Copied the chat link for {result.Name}."
+                : $"Copied whisper text for {result.Name}.";
             LogHelper.Log($"Copied clipboard text for '{result.Name}': {clipboardText}");
+        }
+
+        private static string BuildWhisperClipboardText(string currentCharacterName, string chatLink)
+        {
+            if (string.IsNullOrWhiteSpace(currentCharacterName))
+            {
+                return chatLink;
+            }
+
+            return $"/w {currentCharacterName}, {chatLink}";
         }
 
         private async Task EnsurePoiIndexReadyAsync()

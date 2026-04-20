@@ -1,16 +1,19 @@
 # Tyria's GPS
 
-Tyria's GPS lets you copy a place chat link directly from each result row.
+Tyria's GPS helps you quickly find a place and copy its chat link.
 
-## Current Features
+## What It Does
 
-- Corner icon is available.
-- Searches map data from the public API.
-- Builds a POI index from API data on first search.
-- Orders results by closer name matches.
-- Shows results in a scrollable Matches panel.
-- Click any result row to copy its chat link.
-- Returns up to 25 matches per search.
+- Search by map or location name.
+- Show up to 25 matching results.
+- Click any result to copy whisper-ready text in the format `/w Your Character, [chat link]`.
+- If your active character name is not available yet, clicking a result copies just the chat link.
+
+## How Copying Works
+
+When your current character name is available, Tyria's GPS includes it automatically so one click gives you a whisper-ready line you can paste directly into chat.
+
+If the game has not reported your active character name yet, the module copies only the location chat link.
 
 ## Installation
 
@@ -22,6 +25,13 @@ Tyria's GPS lets you copy a place chat link directly from each result row.
 6. Back in BlishHUD, refresh modules (or restart BlishHUD).
 
 ## Version History
+
+**v1.4.0**
+- Expanded results layout for easier scanning.
+- Renamed panel title from Matches to Results.
+- Added whisper-ready copy behavior from result rows when character name is available.
+- Falls back to copying only the POI chat link when character name is unavailable.
+- Updated to version 1.4.0.
 
 **v1.3.0**
 - Made result rows click-to-copy with tooltips.
