@@ -52,6 +52,7 @@ namespace TyriasGPS
         private List<PoiSearchResult> _poiIndex = new List<PoiSearchResult>();
 
         private readonly Dictionary<string, IReadOnlyList<PoiSearchResult>> _queryCache = new Dictionary<string, IReadOnlyList<PoiSearchResult>>();
+        private readonly Dictionary<StandardButton, PoiSearchResult> _resultButtons = new Dictionary<StandardButton, PoiSearchResult>();
 
         [ImportingConstructor]
         public TyriasGPSModule([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters)
@@ -88,7 +89,7 @@ namespace TyriasGPS
             };
             _cornerIcon.Click += OnCornerIconClick;
 
-            _window = new StandardWindow(_windowBackgroundTexture, new Microsoft.Xna.Framework.Rectangle(40, 26, 420, 360), new Microsoft.Xna.Framework.Rectangle(50, 36, 400, 330))
+            _window = new StandardWindow(_windowBackgroundTexture, new Microsoft.Xna.Framework.Rectangle(40, 26, 500, 360), new Microsoft.Xna.Framework.Rectangle(50, 50, 480, 316))
             {
                 Parent = GameService.Graphics.SpriteScreen,
                 Title = "Tyria's GPS",
@@ -184,6 +185,7 @@ namespace TyriasGPS
         private void RebuildResultsPanel()
         {
             _resultsFlowPanel?.Dispose();
+            _resultButtons.Clear();
             _resultsFlowPanel = new FlowPanel
             {
                 Parent = _window,
@@ -204,16 +206,37 @@ namespace TyriasGPS
 
             foreach (var result in results)
             {
-                var line = new Label
+                var button = new StandardButton
                 {
                     Parent = _resultsFlowPanel,
-                    AutoSizeWidth = false,
                     Width = 360,
                     Height = 34,
-                    WrapText = true,
-                    Text = $"{result.Name} [{result.Type}] - {result.MapName}"
+                    Text = $"{result.Name} [{result.Type}] - {result.MapName}",
+                    BasicTooltipText = $"Click to copy the chat link for {result.Name}. Use /w <name> first, then paste it.",
+                    Icon = _moduleIconTexture,
+                    ResizeIcon = true
                 };
+
+                button.Click += OnResultButtonClick;
+                _resultButtons[button] = result;
             }
+        }
+
+        private async void OnResultButtonClick(object sender, MouseEventArgs e)
+        {
+            if (sender is StandardButton button && _resultButtons.TryGetValue(button, out var result))
+            {
+                await CopyResultLinkAsync(result);
+            }
+        }
+
+        private async Task CopyResultLinkAsync(PoiSearchResult result)
+        {
+            string clipboardText = result.ChatLink;
+            await ClipboardUtil.WindowsClipboardService.SetTextAsync(clipboardText);
+
+            _statusLabel.Text = $"Copied the chat link for {result.Name}.";
+            LogHelper.Log($"Copied clipboard text for '{result.Name}': {clipboardText}");
         }
 
         private async Task EnsurePoiIndexReadyAsync()
@@ -389,6 +412,13 @@ namespace TyriasGPS
             {
                 _searchButton.Click -= OnSearchButtonClick;
             }
+
+            foreach (StandardButton button in _resultButtons.Keys.ToList())
+            {
+                button.Click -= OnResultButtonClick;
+            }
+
+            _resultButtons.Clear();
 
             if (_cornerIcon != null)
             {

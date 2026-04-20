@@ -1,6 +1,6 @@
 # Tyria's GPS
 
-Tyria's GPS shows matching places in a scrollable results panel.
+Tyria's GPS lets you copy a place chat link directly from each result row.
 
 ## Current Features
 
@@ -9,6 +9,7 @@ Tyria's GPS shows matching places in a scrollable results panel.
 - Builds a POI index from API data on first search.
 - Orders results by closer name matches.
 - Shows results in a scrollable Matches panel.
+- Click any result row to copy its chat link.
 - Returns up to 25 matches per search.
 
 ## Installation
@@ -21,6 +22,10 @@ Tyria's GPS shows matching places in a scrollable results panel.
 6. Back in BlishHUD, refresh modules (or restart BlishHUD).
 
 ## Version History
+
+**v1.3.0**
+- Made result rows click-to-copy with tooltips.
+- Updated to version 1.3.0.
 
 **v1.2.0**
 - Added a dedicated scrollable panel for search results.
