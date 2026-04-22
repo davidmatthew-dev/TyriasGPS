@@ -51,6 +51,7 @@ namespace TyriasGPS
         private FlowPanel _resultsFlowPanel;
         private TextBox _whisperTargetPreviewTextBox;
         private StandardButton _copyWhisperNameButton;
+        private Label _versionLabel;
         private AsyncTexture2D _windowBackgroundTexture;
         private AsyncTexture2D _moduleIconTexture;
 
@@ -159,6 +160,17 @@ namespace TyriasGPS
                 WrapText = false,
                 TextColor = Microsoft.Xna.Framework.Color.LightGray,
                 Text = "Results source: Waiting for first search."
+            };
+
+            _versionLabel = new Label
+            {
+                Parent = _window,
+                Location = new Point(10, 560),
+                Size = new Point(460, 20),
+                Text = "v" + typeof(Module).GetProperty("Version")?.GetValue(this),
+                TextColor = Microsoft.Xna.Framework.Color.LightGray,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                WrapText = false
             };
 
             _window.Show();
@@ -454,13 +466,8 @@ namespace TyriasGPS
 
         private string GetPoiCachePath()
         {
-            string logsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-            if (!Directory.Exists(logsPath))
-            {
-                Directory.CreateDirectory(logsPath);
-            }
-
-            return Path.Combine(logsPath, PoiCacheFileName);
+            string cacheFolder = DirectoryUtil.RegisterDirectory("Tyrias-GPS");
+            return Path.Combine(cacheFolder, PoiCacheFileName);
         }
 
         private void SavePoiIndexToDisk(IReadOnlyCollection<PoiSearchResult> poiIndex)

@@ -10,7 +10,9 @@ Tyria's GPS helps you quickly find a place and copy its chat link.
 - Copy your current character name with the Copy Name button.
 - Show a Searching... state while a search is running.
 - Show results source state: Waiting for first search, Searching, Previous query cache, or Fresh index search.
-- Cache the POI index to poi-index-cache.csv to speed up future loads.
+- Cache the POI index and logs in the BlishHUD-managed tyrias-gps data directory.
+- Automatically rotate logs when they reach 10 MB, archiving with a regional date suffix.
+- Display the module version in the bottom right corner of the window.
 
 ## Why Copy Name Exists
 
@@ -31,6 +33,13 @@ The Copy Name button speeds that up. It copies your active character name so you
 6. Back in BlishHUD, refresh modules (or restart BlishHUD).
 
 ## Version History
+
+**v1.6.0**
+- Logs and cache now write to the BlishHUD-managed tyrias-gps directory.
+- Log file renamed from actions.log to tyrias-gps.log.
+- Automatic log rotation when file reaches 10 MB, archived with regional date suffix.
+- Version label added to the bottom right of the window.
+- Updated to version 1.6.0.
 
 **v1.5.0**
 - Removed whisper-ready copy from result rows — clicking a result now copies only the chat link.
