@@ -25,6 +25,17 @@ namespace TyriasGPS
     {
         private const string PoiCacheFileName = "poi-index-cache.csv";
 
+        private static readonly string[] ResultsUsageBullets = new string[]
+        {
+            "How to use:",
+            "- Type a POI, map, or location into the search box",
+            "- Click Search",
+            "- Open a whisper window",
+            "- Click Copy Name to copy your character name",
+            "- Click a result to copy the POI chat link",
+            "- Paste the link into chat"
+        };
+
         private sealed class PoiSearchResult
         {
             public string Name { get; set; }
@@ -49,12 +60,13 @@ namespace TyriasGPS
         private CornerIcon _cornerIcon;
         private StandardWindow _window;
         private TextBox _searchTextBox;
-        private StandardButton _searchButton;
+        private GpsActionButton _searchButton;
+        private GpsActionButton _clearSearchButton;
+        private GpsActionButton _clearCacheButton;
         private Label _statusLabel;
         private Label _cacheSourceLabel;
         private FlowPanel _resultsFlowPanel;
-        private TextBox _namePreviewTextBox;
-        private StandardButton _copyNameButton;
+        private GpsActionButton _copyNameButton;
         private Label _versionLabel;
         private AsyncTexture2D _windowBackgroundTexture;
         private AsyncTexture2D _moduleIconTexture;
@@ -62,7 +74,9 @@ namespace TyriasGPS
 
         private Task _poiIndexLoadTask;
         private int _copyNameFeedbackToken;
-    private DateTime _nextNamePreviewRefreshUtc = DateTime.MinValue;
+        private int _clearSearchFeedbackToken;
+        private int _clearCacheFeedbackToken;
+        private string _cachedCharacterName;
 
         private List<PoiSearchResult> _poiIndex = new List<PoiSearchResult>();
 
@@ -134,7 +148,7 @@ namespace TyriasGPS
                 PlaceholderText = "Search map/location"
             };
 
-            _searchButton = new StandardButton
+            _searchButton = new GpsActionButton
             {
                 Parent = _window,
                 Text = "Search",
@@ -143,24 +157,36 @@ namespace TyriasGPS
             };
             _searchButton.Click += OnSearchButtonClick;
 
-            _namePreviewTextBox = new TextBox
+            _clearSearchButton = new GpsActionButton
             {
                 Parent = _window,
-                Location = new Point(5, 40),
-                Size = new Point(315, 28),
-                PlaceholderText = "Current character name unavailable"
+                Text = "Clear Search",
+                Location = new Point(340, 40),
+                Size = new Point(148, 28),
+                BasicTooltipText = "Clear search box and results."
             };
+            _clearSearchButton.Click += OnClearSearchButtonClick;
 
-            _copyNameButton = new StandardButton
+            _clearCacheButton = new GpsActionButton
+            {
+                Parent = _window,
+                Location = new Point(5, 568),
+                Size = new Point(148, 28),
+                Text = "Clear Cache",
+                Style = GpsActionButtonStyle.Accent,
+                BasicTooltipText = "Clear in-memory and disk cache."
+            };
+            _clearCacheButton.Click += OnClearCacheButtonClick;
+
+            _copyNameButton = new GpsActionButton
             {
                 Parent = _window,
                 Text = "Copy Name",
-                Location = new Point(325, 40),
-                Size = new Point(163, 28),
+                Location = new Point(5, 40),
+                Size = new Point(148, 28),
                 BasicTooltipText = "Copies your character name. Paste it into the whisper window name box."
             };
             _copyNameButton.Click += OnCopyNameButtonClick;
-            RefreshNamePreview();
 
             _statusLabel = new Label
             {
@@ -186,15 +212,13 @@ namespace TyriasGPS
             _versionLabel = new Label
             {
                 Parent = _window,
-                Location = new Point(5, 570),
-                Size = new Point(484, 20),
+                Location = new Point(260, 570),
+                Size = new Point(229, 20),
                 Text = "v" + typeof(Module).GetProperty("Version")?.GetValue(this),
                 TextColor = Microsoft.Xna.Framework.Color.LightGray,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 WrapText = false
             };
-
-            _window.Show();
         }
 
         protected override void OnModuleLoaded(EventArgs e)
@@ -284,10 +308,14 @@ namespace TyriasGPS
                 return;
             }
 
-            if (DateTime.UtcNow >= _nextNamePreviewRefreshUtc)
+            if (_cachedCharacterName == null)
             {
-                RefreshNamePreview();
-                _nextNamePreviewRefreshUtc = DateTime.UtcNow.AddMilliseconds(500);
+                string name = GameService.Gw2Mumble.PlayerCharacter?.Name?.Trim() ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    _cachedCharacterName = name;
+                    LogHelper.Log("Character name detected: " + name);
+                }
             }
         }
 
@@ -299,6 +327,75 @@ namespace TyriasGPS
         private async void OnSearchButtonClick(object sender, MouseEventArgs e)
         {
             await RunSearchAsync();
+        }
+
+        private async void OnClearSearchButtonClick(object sender, MouseEventArgs e)
+        {
+            _searchTextBox.Text = string.Empty;
+            _resultsFlowPanel.ClearChildren();
+            _resultButtons.Clear();
+            _statusLabel.Text = "Search cleared. Enter a new search term.";
+            _cacheSourceLabel.Text = "Results source: Waiting for first search.";
+            RebuildResultsPanel();
+            LogHelper.Log("Search and results cleared by user.");
+
+            int feedbackToken = ++_clearSearchFeedbackToken;
+            _clearSearchButton.Text = "Search Cleared";
+            await Task.Delay(5000);
+            if (_clearSearchFeedbackToken == feedbackToken)
+            {
+                _clearSearchButton.Text = "Clear Search";
+            }
+        }
+
+        private async void OnClearCacheButtonClick(object sender, MouseEventArgs e)
+        {
+            ClearPoiCaches();
+
+            int feedbackToken = ++_clearCacheFeedbackToken;
+            _clearCacheButton.Text = "Cache Cleared";
+            await Task.Delay(5000);
+            if (_clearCacheFeedbackToken == feedbackToken)
+            {
+                _clearCacheButton.Text = "Clear Cache";
+            }
+        }
+
+        private void ClearPoiCaches()
+        {
+            try
+            {
+                int queryCacheCount = _queryCache.Count;
+                int poiCount = _poiIndex?.Count ?? 0;
+
+                _queryCache.Clear();
+                _poiIndex = new List<PoiSearchResult>();
+
+                lock (_poiIndexLock)
+                {
+                    _poiIndexLoadTask = null;
+                }
+
+                string cachePath = GetPoiCachePath();
+                if (System.IO.File.Exists(cachePath))
+                {
+                    System.IO.File.Delete(cachePath);
+                    LogHelper.Log("Clear Cache used: removed disk cache file at " + cachePath + ".");
+                }
+                else
+                {
+                    LogHelper.Log("Clear Cache used: no disk cache file found at " + cachePath + ".");
+                }
+
+                UpdateCacheSourceLabel("Results source: Cache cleared. Next search will rebuild index.");
+                _statusLabel.Text = "Cache cleared. Next search will rebuild POI index.";
+                LogHelper.Log($"Clear Cache used: cleared {queryCacheCount} query-cache entries and reset {poiCount} indexed POIs.");
+            }
+            catch (Exception ex)
+            {
+                _statusLabel.Text = "Cache clear failed. Check logs for details.";
+                LogHelper.LogException(ex, "Clear Cache action failed");
+            }
         }
 
         private async void OnCopyNameButtonClick(object sender, MouseEventArgs e)
@@ -364,7 +461,7 @@ namespace TyriasGPS
             }
         }
 
-        private void RebuildResultsPanel()
+        private void RebuildResultsPanel(bool showUsageText = true)
         {
             _topBackgroundPanel?.Dispose();
             _resultsFlowPanel?.Dispose();
@@ -372,8 +469,8 @@ namespace TyriasGPS
             _resultsFlowPanel = new FlowPanel
             {
                 Parent = _window,
-                Location = new Point(5, 124),
-                Size = new Point(484, 440),
+                Location = new Point(5, 148),
+                Size = new Point(484, 416),
                 Title = "Results",
                 ShowBorder = true,
                 BackgroundColor = new Microsoft.Xna.Framework.Color(14, 20, 36, 210),
@@ -382,11 +479,35 @@ namespace TyriasGPS
                 ControlPadding = new Vector2(0f, 4f),
                 OuterControlPadding = new Vector2(8f, 8f)
             };
+
+            if (!showUsageText)
+            {
+                return;
+            }
+
+            foreach (string bullet in ResultsUsageBullets)
+            {
+                bool isHeader = !bullet.StartsWith("-");
+                var label = new Label
+                {
+                    Parent = _resultsFlowPanel,
+                    Width = 452,
+                    AutoSizeHeight = true,
+                    WrapText = false,
+                    TextColor = isHeader ? Microsoft.Xna.Framework.Color.White : Microsoft.Xna.Framework.Color.LightGray,
+                    Text = bullet
+                };
+
+                if (isHeader)
+                {
+                    label.Font = GameService.Content.DefaultFont16;
+                }
+            }
         }
 
         private void RenderSearchResults(IReadOnlyCollection<PoiSearchResult> results)
         {
-            RebuildResultsPanel();
+            RebuildResultsPanel(showUsageText: false);
 
             foreach (var result in results)
             {
@@ -424,18 +545,18 @@ namespace TyriasGPS
 
         private async Task CopyNameAsync()
         {
-            string currentCharacterName = GameService.Gw2Mumble.PlayerCharacter?.Name?.Trim() ?? string.Empty;
+            string currentCharacterName = _cachedCharacterName
+                ?? GameService.Gw2Mumble.PlayerCharacter?.Name?.Trim()
+                ?? string.Empty;
 
             if (string.IsNullOrWhiteSpace(currentCharacterName))
             {
                 _statusLabel.Text = "Could not detect your active character name yet.";
                 LogHelper.Log("Copy Name requested, but active character name was unavailable.");
-                RefreshNamePreview();
                 return;
             }
 
             await ClipboardUtil.WindowsClipboardService.SetTextAsync(currentCharacterName);
-            RefreshNamePreview();
             _statusLabel.Text = "Copied Name: " + currentCharacterName;
             LogHelper.Log("Copied Name: " + currentCharacterName);
 
@@ -446,17 +567,6 @@ namespace TyriasGPS
             {
                 _copyNameButton.Text = "Copy Name";
             }
-        }
-
-        private void RefreshNamePreview()
-        {
-            if (_namePreviewTextBox == null)
-            {
-                return;
-            }
-
-            string text = GameService.Gw2Mumble.PlayerCharacter?.Name?.Trim() ?? string.Empty;
-            _namePreviewTextBox.Text = string.IsNullOrWhiteSpace(text) ? string.Empty : text;
         }
 
         private async Task EnsurePoiIndexReadyAsync()
@@ -831,6 +941,16 @@ namespace TyriasGPS
                 _searchButton.Click -= OnSearchButtonClick;
             }
 
+            if (_clearSearchButton != null)
+            {
+                _clearSearchButton.Click -= OnClearSearchButtonClick;
+            }
+
+            if (_clearCacheButton != null)
+            {
+                _clearCacheButton.Click -= OnClearCacheButtonClick;
+            }
+
             if (_copyNameButton != null)
             {
                 _copyNameButton.Click -= OnCopyNameButtonClick;
@@ -865,4 +985,3 @@ namespace TyriasGPS
         }
     }
 }
-

@@ -18,6 +18,7 @@ namespace TyriasGPS.Controls
 
         private static readonly Color _idleBackground = new Color(22, 30, 48, 220);
         private static readonly Color _hoverBackground = new Color(35, 55, 95, 240);
+        private static readonly Color _pressBackground = new Color(52, 86, 140, 255);
         private static readonly Color _accentColor = new Color(70, 150, 230, 255);
         private static readonly Color _idleTextColor = new Color(210, 218, 230, 255);
         private static readonly Color _hoverTextColor = new Color(240, 245, 255, 255);
@@ -27,9 +28,13 @@ namespace TyriasGPS.Controls
         private string _text;
         private Glide.Tween _animIn;
         private Glide.Tween _animOut;
+        private Glide.Tween _pressOut;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public float HoverProgress { get; set; }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public float PressProgress { get; set; }
 
         public AsyncTexture2D Icon
         {
@@ -64,16 +69,20 @@ namespace TyriasGPS.Controls
 
         protected override void OnClick(MouseEventArgs e)
         {
-            Content.PlaySoundEffectByName(@"audio\button-click");
+            PressProgress = 1f;
+            _pressOut?.Pause();
+            _pressOut = Animation.Tweener.Tween(this, new { PressProgress = 0f }, ANIM_DURATION);
             base.OnClick(e);
         }
 
         protected override void Paint(SpriteBatch spriteBatch, Rectangle bounds)
         {
             float t = HoverProgress;
+            float p = PressProgress;
 
-            // Background - smooth transition from dark navy to medium blue
+            // Background - smooth transition from dark navy to medium blue, flash on press
             Color bg = Color.Lerp(_idleBackground, _hoverBackground, t);
+            bg = Color.Lerp(bg, _pressBackground, p);
             spriteBatch.DrawOnCtrl(this, ContentService.Textures.Pixel, bounds, bg);
 
             // Left accent bar - fades in and grows on hover
