@@ -15,6 +15,8 @@ using Blish_HUD.Settings;
 using Gw2Sharp;
 using Gw2Sharp.WebApi.V2.Models;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
+using TyriasGPS.Controls;
 
 namespace TyriasGPS
 {
@@ -42,6 +44,8 @@ namespace TyriasGPS
         private readonly object _poiIndexLock = new object();
 
         private SettingEntry<string> _locationSearch;
+        private SettingEntry<KeyBinding> _openWindowKeybind;
+        private KeyBinding _boundOpenWindowKeybind;
         private CornerIcon _cornerIcon;
         private StandardWindow _window;
         private TextBox _searchTextBox;
@@ -49,19 +53,21 @@ namespace TyriasGPS
         private Label _statusLabel;
         private Label _cacheSourceLabel;
         private FlowPanel _resultsFlowPanel;
-        private TextBox _whisperTargetPreviewTextBox;
-        private StandardButton _copyWhisperNameButton;
+        private TextBox _namePreviewTextBox;
+        private StandardButton _copyNameButton;
         private Label _versionLabel;
         private AsyncTexture2D _windowBackgroundTexture;
         private AsyncTexture2D _moduleIconTexture;
+        private Panel _topBackgroundPanel;
 
         private Task _poiIndexLoadTask;
-        private int _copyWhisperNameFeedbackToken;
+        private int _copyNameFeedbackToken;
+    private DateTime _nextNamePreviewRefreshUtc = DateTime.MinValue;
 
         private List<PoiSearchResult> _poiIndex = new List<PoiSearchResult>();
 
         private readonly Dictionary<string, IReadOnlyList<PoiSearchResult>> _queryCache = new Dictionary<string, IReadOnlyList<PoiSearchResult>>();
-        private readonly Dictionary<StandardButton, PoiSearchResult> _resultButtons = new Dictionary<StandardButton, PoiSearchResult>();
+        private readonly Dictionary<GpsResultItem, PoiSearchResult> _resultButtons = new Dictionary<GpsResultItem, PoiSearchResult>();
 
         [ImportingConstructor]
         public TyriasGPSModule([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters)
@@ -71,6 +77,7 @@ namespace TyriasGPS
         protected override void DefineSettings(SettingCollection settings)
         {
             _locationSearch = settings.DefineSetting("locationSearch", string.Empty, () => "Location Search", () => "Search term for POI search.");
+            _openWindowKeybind = settings.DefineSetting("openWindowKeybind", new KeyBinding(Keys.None), () => "Open Window Keybind", () => "Keybind to open the location search window.");
         }
 
         protected override void Initialize()
@@ -81,8 +88,8 @@ namespace TyriasGPS
         {
             LogHelper.Log("Module loaded.");
 
-            _windowBackgroundTexture = AsyncTexture2D.FromAssetId(155997);
-            _moduleIconTexture = AsyncTexture2D.FromAssetId(440023);
+            _windowBackgroundTexture = AsyncTexture2D.FromAssetId(502049);
+            _moduleIconTexture = ModuleParameters.ContentsManager.GetTexture("icons/module-icon.png");
 
             return Task.CompletedTask;
         }
@@ -98,18 +105,32 @@ namespace TyriasGPS
             };
             _cornerIcon.Click += OnCornerIconClick;
 
-            _window = new StandardWindow(_windowBackgroundTexture, new Microsoft.Xna.Framework.Rectangle(40, 26, 500, 640), new Microsoft.Xna.Framework.Rectangle(50, 50, 480, 596))
+            _window = new StandardWindow(
+                _windowBackgroundTexture,
+                new Microsoft.Xna.Framework.Rectangle(35, 26, 930, 710),
+                new Microsoft.Xna.Framework.Rectangle(35, 11, 924, 699))
             {
                 Parent = GameService.Graphics.SpriteScreen,
                 Title = "Tyria's GPS",
-                Location = new Point(300, 220)
+                Location = new Point(300, 220),
+                Size = new Point(500, 660)
+            };
+            _window.Emblem = _moduleIconTexture;
+
+            _topBackgroundPanel = new Panel
+            {
+                Parent = _window,
+                Location = new Point(0, 0),
+                Size = new Point(494, 620),
+                BackgroundColor = new Microsoft.Xna.Framework.Color(30, 34, 42, 255),
+                ZIndex = 0
             };
 
             _searchTextBox = new TextBox
             {
                 Parent = _window,
-                Location = new Point(10, 20),
-                Size = new Point(300, 28),
+                Location = new Point(5, 8),
+                Size = new Point(330, 28),
                 PlaceholderText = "Search map/location"
             };
 
@@ -117,35 +138,35 @@ namespace TyriasGPS
             {
                 Parent = _window,
                 Text = "Search",
-                Location = new Point(320, 20),
-                Size = new Point(80, 28)
+                Location = new Point(340, 8),
+                Size = new Point(148, 28)
             };
             _searchButton.Click += OnSearchButtonClick;
 
-            _whisperTargetPreviewTextBox = new TextBox
+            _namePreviewTextBox = new TextBox
             {
                 Parent = _window,
-                Location = new Point(10, 60),
-                Size = new Point(290, 28),
+                Location = new Point(5, 40),
+                Size = new Point(315, 28),
                 PlaceholderText = "Current character name unavailable"
             };
 
-            _copyWhisperNameButton = new StandardButton
+            _copyNameButton = new StandardButton
             {
                 Parent = _window,
                 Text = "Copy Name",
-                Location = new Point(310, 60),
-                Size = new Point(170, 28),
+                Location = new Point(325, 40),
+                Size = new Point(163, 28),
                 BasicTooltipText = "Copies your character name. Paste it into the whisper window name box."
             };
-            _copyWhisperNameButton.Click += OnCopyWhisperNameButtonClick;
-            RefreshWhisperNamePreview();
+            _copyNameButton.Click += OnCopyNameButtonClick;
+            RefreshNamePreview();
 
             _statusLabel = new Label
             {
                 Parent = _window,
-                Location = new Point(10, 95),
-                Size = new Point(470, 28),
+                Location = new Point(5, 72),
+                Size = new Point(484, 28),
                 WrapText = true,
                 Text = "Search for a location to show matching results."
             };
@@ -155,8 +176,8 @@ namespace TyriasGPS
             _cacheSourceLabel = new Label
             {
                 Parent = _window,
-                Location = new Point(10, 126),
-                Size = new Point(470, 22),
+                Location = new Point(5, 100),
+                Size = new Point(484, 20),
                 WrapText = false,
                 TextColor = Microsoft.Xna.Framework.Color.LightGray,
                 Text = "Results source: Waiting for first search."
@@ -165,8 +186,8 @@ namespace TyriasGPS
             _versionLabel = new Label
             {
                 Parent = _window,
-                Location = new Point(10, 560),
-                Size = new Point(460, 20),
+                Location = new Point(5, 570),
+                Size = new Point(484, 20),
                 Text = "v" + typeof(Module).GetProperty("Version")?.GetValue(this),
                 TextColor = Microsoft.Xna.Framework.Color.LightGray,
                 HorizontalAlignment = HorizontalAlignment.Right,
@@ -180,6 +201,94 @@ namespace TyriasGPS
         {
             base.OnModuleLoaded(e);
             CreateUi();
+            EnsureOpenWindowKeybindHooked();
+        }
+
+        private void EnsureOpenWindowKeybindHooked()
+        {
+            KeyBinding currentKeybind = _openWindowKeybind?.Value;
+
+            if (ReferenceEquals(_boundOpenWindowKeybind, currentKeybind))
+            {
+                return;
+            }
+
+            if (_boundOpenWindowKeybind != null)
+            {
+                _boundOpenWindowKeybind.Activated -= OnOpenWindowKeybindActivated;
+                _boundOpenWindowKeybind.BindingChanged -= OnOpenWindowKeybindBindingChanged;
+                LogHelper.Log("Open window keybind handler detached from previous binding.");
+            }
+
+            _boundOpenWindowKeybind = currentKeybind;
+
+            if (_boundOpenWindowKeybind != null)
+            {
+                ApplyOpenWindowKeybindSettings(_boundOpenWindowKeybind);
+                _boundOpenWindowKeybind.BindingChanged += OnOpenWindowKeybindBindingChanged;
+                _boundOpenWindowKeybind.Activated += OnOpenWindowKeybindActivated;
+                LogHelper.Log("Open window keybind handler attached: " + _boundOpenWindowKeybind.GetBindingDisplayText());
+            }
+        }
+
+        private void ApplyOpenWindowKeybindSettings(KeyBinding keybind)
+        {
+            if (keybind == null)
+            {
+                return;
+            }
+
+            keybind.Enabled = true;
+            keybind.IgnoreWhenInTextField = false;
+
+            LogHelper.Log($"Open window keybind configured: Primary={keybind.PrimaryKey}, Modifiers={keybind.ModifierKeys}, Enabled={keybind.Enabled}, IgnoreWhenInTextField={keybind.IgnoreWhenInTextField}, Display='{keybind.GetBindingDisplayText()}'");
+        }
+
+        private void OnOpenWindowKeybindBindingChanged(object sender, EventArgs e)
+        {
+            if (sender is KeyBinding keybind)
+            {
+                ApplyOpenWindowKeybindSettings(keybind);
+                LogHelper.Log("Open window keybind changed by user.");
+            }
+        }
+
+        private void OnOpenWindowKeybindActivated(object sender, EventArgs e)
+        {
+            if (_window == null)
+            {
+                LogHelper.Log("Open window keybind activated, but window is not ready yet.");
+                return;
+            }
+
+            if (_window.Visible)
+            {
+                _window.Hide();
+                LogHelper.Log("Open window keybind activated: window hidden.");
+            }
+            else
+            {
+                _window.Show();
+                LogHelper.Log("Open window keybind activated: window shown.");
+            }
+        }
+
+        protected override void Update(GameTime gameTime)
+        {
+            base.Update(gameTime);
+
+            EnsureOpenWindowKeybindHooked();
+
+            if (_window == null)
+            {
+                return;
+            }
+
+            if (DateTime.UtcNow >= _nextNamePreviewRefreshUtc)
+            {
+                RefreshNamePreview();
+                _nextNamePreviewRefreshUtc = DateTime.UtcNow.AddMilliseconds(500);
+            }
         }
 
         private void OnCornerIconClick(object sender, MouseEventArgs e)
@@ -192,9 +301,9 @@ namespace TyriasGPS
             await RunSearchAsync();
         }
 
-        private async void OnCopyWhisperNameButtonClick(object sender, MouseEventArgs e)
+        private async void OnCopyNameButtonClick(object sender, MouseEventArgs e)
         {
-            await CopyWhisperNameAsync();
+            await CopyNameAsync();
         }
 
         private async Task RunSearchAsync()
@@ -257,15 +366,17 @@ namespace TyriasGPS
 
         private void RebuildResultsPanel()
         {
+            _topBackgroundPanel?.Dispose();
             _resultsFlowPanel?.Dispose();
             _resultButtons.Clear();
             _resultsFlowPanel = new FlowPanel
             {
                 Parent = _window,
-                Location = new Point(10, 155),
-                Size = new Point(470, 385),
+                Location = new Point(5, 124),
+                Size = new Point(484, 440),
                 Title = "Results",
                 ShowBorder = true,
+                BackgroundColor = new Microsoft.Xna.Framework.Color(14, 20, 36, 210),
                 CanScroll = true,
                 FlowDirection = ControlFlowDirection.SingleTopToBottom,
                 ControlPadding = new Vector2(0f, 4f),
@@ -279,25 +390,24 @@ namespace TyriasGPS
 
             foreach (var result in results)
             {
-                var button = new StandardButton
+                var item = new GpsResultItem
                 {
                     Parent = _resultsFlowPanel,
-                    Width = 440,
+                    Width = 452,
                     Height = 34,
                     Text = $"{result.Name} [{result.Type}] - {result.MapName}",
                     BasicTooltipText = $"Click to copy the chat link for {result.Name}. Use /w <name> first, then paste it.",
-                    Icon = _moduleIconTexture,
-                    ResizeIcon = true
+                    Icon = _moduleIconTexture
                 };
 
-                button.Click += OnResultButtonClick;
-                _resultButtons[button] = result;
+                item.Click += OnResultButtonClick;
+                _resultButtons[item] = result;
             }
         }
 
         private async void OnResultButtonClick(object sender, MouseEventArgs e)
         {
-            if (sender is StandardButton button && _resultButtons.TryGetValue(button, out var result))
+            if (sender is GpsResultItem item && _resultButtons.TryGetValue(item, out var result))
             {
                 await CopyResultLinkAsync(result);
             }
@@ -312,7 +422,7 @@ namespace TyriasGPS
             LogHelper.Log($"Copied clipboard text for '{result.Name}': {clipboardText}");
         }
 
-        private async Task CopyWhisperNameAsync()
+        private async Task CopyNameAsync()
         {
             string currentCharacterName = GameService.Gw2Mumble.PlayerCharacter?.Name?.Trim() ?? string.Empty;
 
@@ -320,33 +430,33 @@ namespace TyriasGPS
             {
                 _statusLabel.Text = "Could not detect your active character name yet.";
                 LogHelper.Log("Copy Name requested, but active character name was unavailable.");
-                RefreshWhisperNamePreview();
+                RefreshNamePreview();
                 return;
             }
 
             await ClipboardUtil.WindowsClipboardService.SetTextAsync(currentCharacterName);
-            RefreshWhisperNamePreview();
+            RefreshNamePreview();
             _statusLabel.Text = "Copied Name: " + currentCharacterName;
             LogHelper.Log("Copied Name: " + currentCharacterName);
 
-            int feedbackToken = ++_copyWhisperNameFeedbackToken;
-            _copyWhisperNameButton.Text = "Copied";
+            int feedbackToken = ++_copyNameFeedbackToken;
+            _copyNameButton.Text = "Copied";
             await Task.Delay(5000);
-            if (_copyWhisperNameFeedbackToken == feedbackToken)
+            if (_copyNameFeedbackToken == feedbackToken)
             {
-                _copyWhisperNameButton.Text = "Copy Name";
+                _copyNameButton.Text = "Copy Name";
             }
         }
 
-        private void RefreshWhisperNamePreview()
+        private void RefreshNamePreview()
         {
-            if (_whisperTargetPreviewTextBox == null)
+            if (_namePreviewTextBox == null)
             {
                 return;
             }
 
             string text = GameService.Gw2Mumble.PlayerCharacter?.Name?.Trim() ?? string.Empty;
-            _whisperTargetPreviewTextBox.Text = string.IsNullOrWhiteSpace(text) ? string.Empty : text;
+            _namePreviewTextBox.Text = string.IsNullOrWhiteSpace(text) ? string.Empty : text;
         }
 
         private async Task EnsurePoiIndexReadyAsync()
@@ -721,14 +831,14 @@ namespace TyriasGPS
                 _searchButton.Click -= OnSearchButtonClick;
             }
 
-            if (_copyWhisperNameButton != null)
+            if (_copyNameButton != null)
             {
-                _copyWhisperNameButton.Click -= OnCopyWhisperNameButtonClick;
+                _copyNameButton.Click -= OnCopyNameButtonClick;
             }
 
-            foreach (StandardButton button in _resultButtons.Keys.ToList())
+            foreach (GpsResultItem item in _resultButtons.Keys.ToList())
             {
-                button.Click -= OnResultButtonClick;
+                item.Click -= OnResultButtonClick;
             }
 
             _resultButtons.Clear();
@@ -740,6 +850,14 @@ namespace TyriasGPS
                 _cornerIcon = null;
             }
 
+            if (_boundOpenWindowKeybind != null)
+            {
+                _boundOpenWindowKeybind.Activated -= OnOpenWindowKeybindActivated;
+                _boundOpenWindowKeybind.BindingChanged -= OnOpenWindowKeybindBindingChanged;
+                _boundOpenWindowKeybind = null;
+            }
+
+            _topBackgroundPanel?.Dispose();
             _resultsFlowPanel?.Dispose();
             _window?.Dispose();
             _windowBackgroundTexture = null;

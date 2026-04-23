@@ -1,8 +1,9 @@
 {
   "name": "Tyria's GPS",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "namespace": "tyriasgps",
   "package": "TyriasGPS.dll",
+  "icon": "icons/module-icon.png",
   "manifest_version": 1,
   "contributors": [
     {

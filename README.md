@@ -8,6 +8,7 @@ Tyria's GPS helps you quickly find a place and copy its chat link.
 - Show up to 25 matching results.
 - Click any result to copy its chat link.
 - Copy your current character name with the Copy Name button.
+- Set an Open Window keybind to show or hide the window.
 - Show a Searching... state while a search is running.
 - Show results source state: Waiting for first search, Searching, Previous query cache, or Fresh index search.
 - Cache the POI index and logs in the BlishHUD-managed tyrias-gps data directory.
@@ -33,6 +34,16 @@ The Copy Name button speeds that up. It copies your active character name so you
 6. Back in BlishHUD, refresh modules (or restart BlishHUD).
 
 ## Version History
+
+**v1.7.0**
+- Added an Open Window keybind setting to show or hide the window without the corner icon.
+- Keybind stays active even when typing in text fields.
+- Switched to a custom compass icon for the corner icon and window emblem.
+- Redesigned result rows with a custom control, dark background, and blue hover animation.
+- Changed window background texture and tightened control layout.
+- Character name preview now auto-refreshes every 500ms.
+- Renamed internal whisper-prefixed variables and methods to use clearer naming.
+- Updated to version 1.7.0.
 
 **v1.6.0**
 - Logs and cache now write to the BlishHUD-managed tyrias-gps directory.
