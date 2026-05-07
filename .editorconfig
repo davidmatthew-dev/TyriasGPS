@@ -1,0 +1,15 @@
+root = true
+
+# Default to LF for all files
+* 
+  end_of_line = lf
+  insert_final_newline = true
+
+# Windows-specific files use CRLF
+*.sln = crlf
+*.csproj = crlf
+*.props = crlf
+*.targets = crlf
+*.bat = crlf
+*.cmd = crlf
+*.ps1 = crlf
