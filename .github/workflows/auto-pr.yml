@@ -1,0 +1,29 @@
+name: Auto Create PR
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create PR if none exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh pr list --base main --head dev --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -z "$existing" ]; then
+            gh pr create --base main --head dev \
+              --title "Merge dev to main" \
+              --body "Automated PR from dev branch push"
+          else
+            echo "PR #$existing already exists, skipping"
+          fi
