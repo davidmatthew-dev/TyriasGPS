@@ -1,0 +1,25 @@
+name: Sync Dev To Main
+
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  contents: write
+
+jobs:
+  sync-dev:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Force dev to main commit
+        run: |
+          git fetch origin main dev
+          git checkout dev
+          git reset --hard origin/main
+          git push --force-with-lease origin dev
