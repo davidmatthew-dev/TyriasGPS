@@ -28,12 +28,24 @@ The Copy Name button speeds that up. It copies your active character name so you
 
 ## Installation
 
-1. Download the module .bhm file.
-2. Open BlishHUD.
-3. Open the Modules window.
+### Option 1: Install from Blish HUD (Recommended)
+
+1. Open Blish HUD.
+2. Open the **Modules** window.
+3. Click the **Browse Modules** button or search for "Tyria's GPS" in the module browser.
+4. Click **Install** on the Tyria's GPS module.
+5. The module will automatically download and install.
+
+Your module will stay up-to-date automatically when new versions are released.
+
+### Option 2: Manual Installation
+
+1. Download the .bhm file from the [latest release](https://github.com/davidmatthew-dev/TyriasGPS/releases).
+2. Open Blish HUD.
+3. Open the **Modules** window.
 4. Right-click inside the Modules window and choose the option to open your module folder.
 5. Copy the .bhm file into that folder.
-6. Back in BlishHUD, refresh modules (or restart BlishHUD).
+6. Back in Blish HUD, refresh modules (or restart Blish HUD).
 
 ## Version History
 
