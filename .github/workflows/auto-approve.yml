@@ -1,0 +1,21 @@
+name: Auto-Approve PR
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    if: github.event.review.user.login == 'davidmatthew-dev'
+    steps:
+      - name: Approve PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              event: 'APPROVE'
+            });
