@@ -48,10 +48,6 @@ Your module will stay up-to-date automatically when new versions are released.
 
 ## Version History
 
-**v1.8.6**
-- Fix sync workflow to fast-forward main to dev after PR merge.
-- Updated to version 1.8.6.
-
 **v1.8.5**
 - Fix .sln project path reference for SSRD build.
 - Updated to version 1.8.5.
