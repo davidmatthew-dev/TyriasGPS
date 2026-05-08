@@ -3,14 +3,16 @@
   "version": "1.8.0",
   "namespace": "tyriasgps",
   "package": "TyriasGPS.dll",
-  "icon": "icons/module-icon.png",
   "manifest_version": 1,
   "contributors": [
     {
-      "name": "ItzFeral"
+      "name": "ItzFeral",
+      "username": "Feral.6057",
+      "url": "https://github.com/davidmatthew-dev"
     }
   ],
   "description": "Search locations and generate a chat link for whispering to yourself.",
+  "url": "https://github.com/davidmatthew-dev/TyriasGPS",
   "dependencies": {
     "bh.blishhud": ">=1.2.0"
   }
