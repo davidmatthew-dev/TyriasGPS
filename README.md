@@ -48,6 +48,10 @@ Your module will stay up-to-date automatically when new versions are released.
 
 ## Version History
 
+**v1.8.2**
+- Removed duplicate root manifest.json to fix SSRD submission.
+- Updated to version 1.8.2.
+
 **v1.8.1**
 - Replaced custom LogHelper with Blish HUD's built in Logger.
 - Logs now write to Blish HUD's log directory instead of a separate module log file.
