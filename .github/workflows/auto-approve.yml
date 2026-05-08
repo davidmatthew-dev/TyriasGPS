@@ -18,5 +18,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr merge ${{ github.event.pull_request.number }} \
-            --merge --auto \
+            --rebase --auto \
             --repo ${{ github.repository }}
