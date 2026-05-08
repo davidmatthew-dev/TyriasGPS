@@ -48,6 +48,10 @@ Your module will stay up-to-date automatically when new versions are released.
 
 ## Version History
 
+**v1.8.4**
+- Move solution files into src/ for SSRD build compatibility.
+- Updated to version 1.8.4.
+
 **v1.8.3**
 - Fix module namespace to match SSRD format.
 - Updated to version 1.8.3.
