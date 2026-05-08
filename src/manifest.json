@@ -1,6 +1,6 @@
 {
   "name": "Tyria's GPS",
-  "version": "1.8.5",
+  "version": "1.8.6",
   "namespace": "itzferal.tyriasgps",
   "package": "TyriasGPS.dll",
   "manifest_version": 1,

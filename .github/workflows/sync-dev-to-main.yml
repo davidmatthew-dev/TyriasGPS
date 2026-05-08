@@ -17,9 +17,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Force dev to main commit
+      - name: Fast-forward main to dev
         run: |
           git fetch origin main dev
-          git checkout dev
-          git reset --hard origin/main
-          git push --force-with-lease origin dev
+          git checkout main
+          git reset --hard origin/dev
+          git push --force-with-lease origin main
