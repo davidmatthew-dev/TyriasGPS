@@ -23,6 +23,7 @@ namespace TyriasGPS
     [Export(typeof(Module))]
     public class TyriasGPSModule : Module
     {
+        private static readonly Logger Logger = Logger.GetLogger<TyriasGPSModule>();
         private const string PoiCacheFileName = "poi-index-cache.csv";
 
         private static readonly string[] ResultsUsageBullets = new string[]
@@ -100,7 +101,7 @@ namespace TyriasGPS
 
         protected override Task LoadAsync()
         {
-            LogHelper.Log("Module loaded.");
+            Logger.Info("Module loaded.");
 
             _windowBackgroundTexture = AsyncTexture2D.FromAssetId(502049);
             _moduleIconTexture = ModuleParameters.ContentsManager.GetTexture("icons/module-icon.png");
@@ -241,7 +242,7 @@ namespace TyriasGPS
             {
                 _boundOpenWindowKeybind.Activated -= OnOpenWindowKeybindActivated;
                 _boundOpenWindowKeybind.BindingChanged -= OnOpenWindowKeybindBindingChanged;
-                LogHelper.Log("Open window keybind handler detached from previous binding.");
+                Logger.Debug("Open window keybind handler detached from previous binding.");
             }
 
             _boundOpenWindowKeybind = currentKeybind;
@@ -251,7 +252,7 @@ namespace TyriasGPS
                 ApplyOpenWindowKeybindSettings(_boundOpenWindowKeybind);
                 _boundOpenWindowKeybind.BindingChanged += OnOpenWindowKeybindBindingChanged;
                 _boundOpenWindowKeybind.Activated += OnOpenWindowKeybindActivated;
-                LogHelper.Log("Open window keybind handler attached: " + _boundOpenWindowKeybind.GetBindingDisplayText());
+                Logger.Debug("Open window keybind handler attached: " + _boundOpenWindowKeybind.GetBindingDisplayText());
             }
         }
 
@@ -265,7 +266,7 @@ namespace TyriasGPS
             keybind.Enabled = true;
             keybind.IgnoreWhenInTextField = false;
 
-            LogHelper.Log($"Open window keybind configured: Primary={keybind.PrimaryKey}, Modifiers={keybind.ModifierKeys}, Enabled={keybind.Enabled}, IgnoreWhenInTextField={keybind.IgnoreWhenInTextField}, Display='{keybind.GetBindingDisplayText()}'");
+            Logger.Debug($"Open window keybind configured: Primary={keybind.PrimaryKey}, Modifiers={keybind.ModifierKeys}, Enabled={keybind.Enabled}, IgnoreWhenInTextField={keybind.IgnoreWhenInTextField}, Display='{keybind.GetBindingDisplayText()}'");
         }
 
         private void OnOpenWindowKeybindBindingChanged(object sender, EventArgs e)
@@ -273,7 +274,7 @@ namespace TyriasGPS
             if (sender is KeyBinding keybind)
             {
                 ApplyOpenWindowKeybindSettings(keybind);
-                LogHelper.Log("Open window keybind changed by user.");
+                Logger.Debug("Open window keybind changed by user.");
             }
         }
 
@@ -281,19 +282,19 @@ namespace TyriasGPS
         {
             if (_window == null)
             {
-                LogHelper.Log("Open window keybind activated, but window is not ready yet.");
+                Logger.Debug("Open window keybind activated, but window is not ready yet.");
                 return;
             }
 
             if (_window.Visible)
             {
                 _window.Hide();
-                LogHelper.Log("Open window keybind activated: window hidden.");
+                Logger.Debug("Open window keybind activated: window hidden.");
             }
             else
             {
                 _window.Show();
-                LogHelper.Log("Open window keybind activated: window shown.");
+                Logger.Debug("Open window keybind activated: window shown.");
             }
         }
 
@@ -314,7 +315,7 @@ namespace TyriasGPS
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     _cachedCharacterName = name;
-                    LogHelper.Log("Character name detected: " + name);
+                    Logger.Debug("Character name detected: " + name);
                 }
             }
         }
@@ -337,7 +338,7 @@ namespace TyriasGPS
             _statusLabel.Text = "Search cleared. Enter a new search term.";
             _cacheSourceLabel.Text = "Results source: Waiting for first search.";
             RebuildResultsPanel();
-            LogHelper.Log("Search and results cleared by user.");
+            Logger.Debug("Search and results cleared by user.");
 
             int feedbackToken = ++_clearSearchFeedbackToken;
             _clearSearchButton.Text = "Search Cleared";
@@ -380,21 +381,21 @@ namespace TyriasGPS
                 if (System.IO.File.Exists(cachePath))
                 {
                     System.IO.File.Delete(cachePath);
-                    LogHelper.Log("Clear Cache used: removed disk cache file at " + cachePath + ".");
+                    Logger.Debug("Clear Cache used: removed disk cache file at " + cachePath + ".");
                 }
                 else
                 {
-                    LogHelper.Log("Clear Cache used: no disk cache file found at " + cachePath + ".");
+                    Logger.Debug("Clear Cache used: no disk cache file found at " + cachePath + ".");
                 }
 
                 UpdateCacheSourceLabel("Results source: Cache cleared. Next search will rebuild index.");
                 _statusLabel.Text = "Cache cleared. Next search will rebuild POI index.";
-                LogHelper.Log($"Clear Cache used: cleared {queryCacheCount} query-cache entries and reset {poiCount} indexed POIs.");
+                Logger.Debug($"Clear Cache used: cleared {queryCacheCount} query-cache entries and reset {poiCount} indexed POIs.");
             }
             catch (Exception ex)
             {
                 _statusLabel.Text = "Cache clear failed. Check logs for details.";
-                LogHelper.LogException(ex, "Clear Cache action failed");
+                Logger.Warn(ex, "Clear Cache action failed.");
             }
         }
 
@@ -413,7 +414,7 @@ namespace TyriasGPS
                 return;
             }
 
-            LogHelper.Log("Searching for location: " + query);
+            Logger.Debug("Searching for location: " + query);
             _statusLabel.Text = $"Searching for: {query}";
             UpdateCacheSourceLabel("Results source: Searching...");
             _searchButton.Enabled = false;
@@ -432,20 +433,20 @@ namespace TyriasGPS
                 {
                     _statusLabel.Text = "No POIs matched the query.";
                     RebuildResultsPanel();
-                    LogHelper.Log("No POIs matched query: " + query);
+                    Logger.Debug("No POIs matched query: " + query);
                     return;
                 }
 
                 _statusLabel.Text = $"Found {results.Count} results, sorting...";
                 RenderSearchResults(results);
                 _statusLabel.Text = $"Found {results.Count} POI matches.";
-                LogHelper.Log($"Search completed for query: {query}, found {results.Count} POI matches.");
+                Logger.Info($"Search completed for query: {query}, found {results.Count} POI matches.");
             }
             catch (Exception ex)
             {
                 _statusLabel.Text = "Search failed. Check logs for details.";
                 RebuildResultsPanel();
-                LogHelper.LogException(ex, "Search request failed");
+                Logger.Warn(ex, "Search request failed.");
             }
             finally
             {
@@ -540,7 +541,7 @@ namespace TyriasGPS
             await ClipboardUtil.WindowsClipboardService.SetTextAsync(clipboardText);
 
             _statusLabel.Text = $"Copied the chat link for {result.Name}.";
-            LogHelper.Log($"Copied clipboard text for '{result.Name}': {clipboardText}");
+            Logger.Debug($"Copied clipboard text for '{result.Name}': {clipboardText}");
         }
 
         private async Task CopyNameAsync()
@@ -552,13 +553,13 @@ namespace TyriasGPS
             if (string.IsNullOrWhiteSpace(currentCharacterName))
             {
                 _statusLabel.Text = "Could not detect your active character name yet.";
-                LogHelper.Log("Copy Name requested, but active character name was unavailable.");
+                Logger.Debug("Copy Name requested, but active character name was unavailable.");
                 return;
             }
 
             await ClipboardUtil.WindowsClipboardService.SetTextAsync(currentCharacterName);
             _statusLabel.Text = "Copied Name: " + currentCharacterName;
-            LogHelper.Log("Copied Name: " + currentCharacterName);
+            Logger.Debug("Copied Name: " + currentCharacterName);
 
             int feedbackToken = ++_copyNameFeedbackToken;
             _copyNameButton.Text = "Copied";
@@ -591,11 +592,11 @@ namespace TyriasGPS
             {
                 _poiIndex = cachedPoiIndex;
                 _queryCache.Clear();
-                LogHelper.Log($"POI index loaded from cache with {_poiIndex.Count} entries.");
+                Logger.Info($"POI index loaded from cache with {_poiIndex.Count} entries.");
                 return;
             }
 
-            LogHelper.Log("POI cache unavailable. Rebuilding index from API data.");
+            Logger.Info("POI cache unavailable. Rebuilding index from API data.");
             await RebuildPoiIndexAsync();
         }
 
@@ -609,13 +610,13 @@ namespace TyriasGPS
                 .Select(group => group.Key)
                 .ToList();
 
-            LogHelper.Log($"Building POI index from {floorTargets.Count} continent-floor combinations.");
+            Logger.Info($"Building POI index from {floorTargets.Count} continent-floor combinations.");
 
             foreach (var floorTarget in floorTargets)
             {
                 if (floorTarget.FloorId <= 0)
                 {
-                    LogHelper.Log($"Skipping unsupported floor id {floorTarget.FloorId} on continent {floorTarget.ContinentId}.");
+                    Logger.Debug($"Skipping unsupported floor id {floorTarget.FloorId} on continent {floorTarget.ContinentId}.");
                     continue;
                 }
 
@@ -651,7 +652,7 @@ namespace TyriasGPS
                 }
                 catch (Exception ex)
                 {
-                    LogHelper.LogException(ex, $"Failed to index continent {floorTarget.ContinentId} floor {floorTarget.FloorId}");
+                    Logger.Warn(ex, $"Failed to index continent {floorTarget.ContinentId} floor {floorTarget.FloorId}.");
                 }
             }
 
@@ -662,7 +663,7 @@ namespace TyriasGPS
 
             _queryCache.Clear();
             SavePoiIndexToDisk(_poiIndex);
-            LogHelper.Log($"POI index ready with {_poiIndex.Count} searchable entries.");
+            Logger.Info($"POI index ready with {_poiIndex.Count} searchable entries.");
         }
 
         private void UpdateCacheSourceLabel(string text)
@@ -712,11 +713,11 @@ namespace TyriasGPS
                 }
 
                 System.IO.File.WriteAllLines(cachePath, lines, Encoding.UTF8);
-                LogHelper.Log($"POI cache saved: {cachePath} ({poiIndex.Count} entries).");
+                Logger.Debug($"POI cache saved: {cachePath} ({poiIndex.Count} entries).");
             }
             catch (Exception ex)
             {
-                LogHelper.LogException(ex, "Failed to write POI index cache");
+                Logger.Error(ex, "Failed to write POI index cache.");
             }
         }
 
@@ -729,14 +730,14 @@ namespace TyriasGPS
                 string cachePath = GetPoiCachePath();
                 if (!System.IO.File.Exists(cachePath))
                 {
-                    LogHelper.Log($"POI cache not found at: {cachePath}");
+                    Logger.Debug($"POI cache not found at: {cachePath}");
                     return false;
                 }
 
                 string[] lines = System.IO.File.ReadAllLines(cachePath, Encoding.UTF8);
                 if (lines.Length <= 1)
                 {
-                    LogHelper.Log($"POI cache file is empty or header-only: {cachePath}");
+                    Logger.Debug($"POI cache file is empty or header-only: {cachePath}");
                     return false;
                 }
 
@@ -779,13 +780,13 @@ namespace TyriasGPS
                     .Select(group => group.First())
                     .ToList();
 
-                LogHelper.Log($"POI cache read from: {cachePath}");
+                Logger.Debug($"POI cache read from: {cachePath}");
 
                 return true;
             }
             catch (Exception ex)
             {
-                LogHelper.LogException(ex, "Failed to read POI index cache");
+                Logger.Error(ex, "Failed to read POI index cache.");
                 poiIndex = new List<PoiSearchResult>();
                 return false;
             }

@@ -13,8 +13,7 @@ Tyria's GPS helps you quickly find a place and copy its chat link.
 - Clear the in-memory and disk POI cache with the Clear Cache button.
 - Show a Searching... state while a search is running.
 - Show results source state: Waiting for first search, Searching, Previous query cache, or Fresh index search.
-- Cache the POI index and logs in the BlishHUD-managed tyrias-gps data directory.
-- Automatically rotate logs when they reach 10 MB, archiving with a regional date suffix.
+- Cache the POI index in the BlishHUD\tyrias-gps data directory.
 - Display the module version in the bottom right corner of the window.
 
 ## Why Copy Name Exists
@@ -49,6 +48,14 @@ Your module will stay up-to-date automatically when new versions are released.
 
 ## Version History
 
+**v1.8.1**
+- Replaced custom LogHelper with Blish HUD's built in Logger.
+- Logs now write to Blish HUD's log directory instead of a separate module log file.
+- Removed custom log file rotation.
+- Removed unsupported icon field from module manifest.
+- Added repository url and contributor details to module manifest.
+- Updated to version 1.8.1.
+
 **v1.8.0**
 - Replaced all buttons with custom GpsActionButton controls (animated blue style).
 - Added Clear Search button to clear the search box and results.
@@ -70,7 +77,7 @@ Your module will stay up-to-date automatically when new versions are released.
 - Updated to version 1.7.0.
 
 **v1.6.0**
-- Logs and cache now write to the BlishHUD-managed tyrias-gps directory.
+- Logs and cache now write to the BlishHUD\tyrias-gps directory.
 - Log file renamed from actions.log to tyrias-gps.log.
 - Automatic log rotation when file reaches 10 MB, archived with regional date suffix.
 - Version label added to the bottom right of the window.
