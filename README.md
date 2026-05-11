@@ -5,6 +5,7 @@ Tyria's GPS helps you quickly find a place and copy its chat link.
 ## What It Does
 
 - Search by map or location name.
+- Press Enter in the search box or click Search to run a search.
 - Show up to 25 matching results.
 - Click any result to copy its chat link.
 - Copy your current character name with the Copy Name button.
@@ -47,6 +48,10 @@ Your module will stay up-to-date automatically when new versions are released.
 6. Back in Blish HUD, refresh modules (or restart Blish HUD).
 
 ## Version History
+
+**v1.8.6**
+- Add Enter key support to run search from the search box.
+- Updated to version 1.8.6.
 
 **v1.8.5**
 - Fix .sln project path reference for SSRD build.
