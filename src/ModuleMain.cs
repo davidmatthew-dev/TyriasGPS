@@ -157,6 +157,7 @@ namespace TyriasGPS
                 Size = new Point(148, 28)
             };
             _searchButton.Click += OnSearchButtonClick;
+            _searchTextBox.EnterPressed += OnSearchTextBoxEnterPressed;
 
             _clearSearchButton = new GpsActionButton
             {
@@ -326,6 +327,11 @@ namespace TyriasGPS
         }
 
         private async void OnSearchButtonClick(object sender, MouseEventArgs e)
+        {
+            await RunSearchAsync();
+        }
+
+        private async void OnSearchTextBoxEnterPressed(object sender, EventArgs e)
         {
             await RunSearchAsync();
         }
@@ -940,6 +946,11 @@ namespace TyriasGPS
             if (_searchButton != null)
             {
                 _searchButton.Click -= OnSearchButtonClick;
+            }
+
+            if (_searchTextBox != null)
+            {
+                _searchTextBox.EnterPressed -= OnSearchTextBoxEnterPressed;
             }
 
             if (_clearSearchButton != null)
