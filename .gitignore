@@ -34,3 +34,9 @@ Thumbs.db
 # Local project files and logs
 local/
 
+# AI and editor tool settings (local only)
+.cursor/
+.claude/
+.gemini/
+.github/setup.js
+
