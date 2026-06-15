@@ -1,0 +1,21 @@
+name: Sync dev to main
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync dev to main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          MAIN_SHA=$(gh api repos/${{ github.repository }}/git/refs/heads/main --jq '.object.sha')
+          gh api --method PATCH repos/${{ github.repository }}/git/refs/heads/dev \
+            -f sha=$MAIN_SHA \
+            -f force=true
