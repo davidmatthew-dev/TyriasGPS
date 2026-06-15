@@ -1,6 +1,6 @@
 {
   "name": "Tyria's GPS",
-  "version": "1.8.6",
+  "version": "1.9.0",
   "namespace": "itzferal.tyriasgps",
   "package": "TyriasGPS.dll",
   "manifest_version": 1,
@@ -11,7 +11,7 @@
       "url": "https://github.com/davidmatthew-dev"
     }
   ],
-  "description": "Search locations and generate a chat link for whispering to yourself.",
+  "description": "Find waypoints, locations, and NPCs by name, then copy their chat link or wiki command.",
   "url": "https://github.com/davidmatthew-dev/TyriasGPS",
   "dependencies": {
     "bh.blishhud": ">=1.2.0"
