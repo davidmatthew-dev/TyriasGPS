@@ -1,20 +1,25 @@
-# Tyria's GPS
+﻿# Tyria's GPS
 
 Tyria's GPS helps you quickly find a place and copy its chat link.
 
 ## What It Does
 
 - Search by map or location name.
+- Search NPC's by name.
 - Press Enter in the search box or click Search to run a search.
 - Show up to 25 matching results.
-- Click any result to copy its chat link.
+- Click any result to copy its chat link or wiki command.
 - Copy your current character name with the Copy Name button.
 - Set an Open Window keybind to show or hide the window.
 - Clear the search box and results with the Clear Search button.
-- Clear the in-memory and disk POI cache with the Clear Cache button.
+- Clear all of Tyria's GPS cache with the Clear Cache button.
 - Show a Searching... state while a search is running.
 - Show results source state: Waiting for first search, Searching, Previous query cache, or Fresh index search.
-- Cache the POI index in the BlishHUD\tyrias-gps data directory.
+- Migrate from CSV to JSON for POI indexing.
+- Load manual POI and NPC entries from JSON files.
+- When API search returns no results, attempt wiki page location extraction and show those location matches.
+- Show Search Wiki button for no result searches and open the GW2 wiki Special:Search page.
+- Save wiki query results to JSON cache for faster repeated lookups.
 - Display the module version in the bottom right corner of the window.
 
 ## Why Copy Name Exists
@@ -36,7 +41,7 @@ The Copy Name button speeds that up. It copies your active character name so you
 4. Click **Install** on the Tyria's GPS module.
 5. The module will automatically download and install.
 
-Your module will stay up-to-date automatically when new versions are released.
+Your module will stay updated automatically when new versions are released.
 
 ### Option 2: Manual Installation
 
@@ -48,6 +53,28 @@ Your module will stay up-to-date automatically when new versions are released.
 6. Back in Blish HUD, refresh modules (or restart Blish HUD).
 
 ## Version History
+
+**v1.9.0**
+- Added NPC search support.
+- Migrated POI indexing and manual entries to JSON files.
+- Added manual POI/NPC override handling with JSON files.
+- Added Mistlock Sanctuary manual waypoint entry.
+- Added Search Wiki button for no result searches.
+- Search Wiki now opens GW2 wiki using Special:Search URLs.
+- Result tooltip text now matches what will be copied (chat link or wiki command).
+- Added wiki page location extraction when API results are empty.
+- Added wiki search result cache JSON storage.
+- Clear Cache now clears POI cache, wiki cache, and override files, then rebuilds from fresh data/defaults.
+- Added version checks for cache and override files during upgrades, including obsolete cache file removal.
+- JSON output now preserves literal waypoint links (for example: [&BPMJAAA=]).
+- Bank, TP, trading post, and merchant searches now return multiple major city hub locations.
+- Banking helper location links are saved to NPC override files for reuse.
+- Improved top area spacing behavior so extra vertical space is only used for longer status text.
+- Wiki location cache now expires after 7 days so results stay accurate after game patches.
+- Searches that time out after 15 seconds now fail gracefully instead of hanging.
+- Added CI workflow to automatically build and attach the .bhm file to GitHub releases.
+- Replaced default CodeQL setup with a custom workflow that builds the project for higher C# analysis quality.
+- Updated to version 1.9.0.
 
 **v1.8.6**
 - Add Enter key support to run search from the search box.
@@ -107,7 +134,7 @@ Your module will stay up-to-date automatically when new versions are released.
 **v1.5.0**
 - Removed whisper-ready copy from result rows — clicking a result now copies only the chat link.
 - Added a Copy Name button to copy the active character name separately.
-- Added POI cache persistence to speed up subsequent searches.
+- Added POI cache saving to speed up subsequent searches.
 - Added search button Searching... state and results source indicator.
 - Updated to version 1.5.0.
 
@@ -115,7 +142,7 @@ Your module will stay up-to-date automatically when new versions are released.
 - Expanded results layout for easier scanning.
 - Renamed panel title from Matches to Results.
 - Added whisper-ready copy behavior from result rows when character name is available.
-- Falls back to copying only the POI chat link when character name is unavailable.
+- Copies only the POI chat link when character name is unavailable.
 - Updated to version 1.4.0.
 
 **v1.3.0**
